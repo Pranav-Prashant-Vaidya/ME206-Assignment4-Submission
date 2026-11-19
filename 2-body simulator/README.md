@@ -17,35 +17,65 @@ An interactive, high-performance web-based 2-body orbital mechanics simulator bu
   * Scroll wheel to zoom in/out.
   * Recenter button to reset camera view.
 * **Real-time Telemetry HUD:** Live readouts for body speeds, orbital separation ($r$), and estimated orbital period ($T$).
-* **Zero Dependencies / Standalone:** Pure front-end application with no complex build steps required.
 
 ---
 
-## 🚀 Quick Start & How to Run
+## 📋 Software Requirements & Dependencies
 
-### Option 1: Open Directly in Browser
-1. Clone or download this repository to your local machine:
-   ```bash
-   git clone https://github.com/your-username/orbit-dynamics-simulator.git
-   ```
-2. Navigate into the directory and double-click `index.html` to open it in any modern browser (Chrome, Edge, Firefox, Safari).
+### Prerequisites / System Requirements
+* **Operating System:** Any modern operating system (Windows, macOS, Linux, ChromeOS, iOS, Android).
+* **Web Browser:** Any modern web browser with HTML5 Canvas and JavaScript enabled (e.g., Google Chrome, Mozilla Firefox, Microsoft Edge, Apple Safari).
+* **Hardware:** No dedicated GPU required; standard integrated graphics are sufficient.
 
-### Option 2: Host via GitHub Pages (Recommended)
-1. Push this code to a public GitHub repository.
-2. Go to **Settings** > **Pages** in your repository menu.
-3. Under **Branch**, select `main` (or `master`) and click **Save**.
-4. GitHub will give you a live link to share your interactive simulator on the web!
+### Dependencies & External Libraries
+* **Zero Local Build Dependencies:** No Node.js, Python, or complex build tools (`npm`, `webpack`) are required to install or configure.
+* **Tailwind CSS (v3.x via CDN):** Included directly via CDN (`https://cdn.tailwindcss.com`) for modern UI styling.
+* **Google Fonts API:** Included via HTML link tag for the *Inter* typography font.
 
 ---
 
-## 🎮 Controls & Shortcuts
+## 📥 Installation Steps
 
-| Action | Control |
+You can set up this simulator on your local machine using either of the following methods:
+
+### Method A: Download directly (No Git required)
+1. Go to the main page of this GitHub repository.
+2. Click the green **Code** button at the top right.
+3. Select **Download ZIP**.
+4. Extract/unzip the downloaded file to any folder on your computer.
+
+### Method B: Clone via Git Command Line
+Open your terminal or command prompt and run:
+```bash
+git clone https://github.com/your-username/orbit-dynamics-simulator.git
+cd orbit-dynamics-simulator
+```
+
+---
+
+## 🚀 How to Run the Simulation
+
+### Option 1: Run Locally in Browser (Fastest)
+1. Open the project folder on your computer.
+2. Double-click the `index.html` file (or right-click and choose **Open with** > your preferred browser).
+3. The simulator will launch immediately in full-screen mode!
+
+### Option 2: Host & Run via GitHub Pages
+1. Push this repository to your public GitHub account.
+2. Go to your repository's **Settings** tab $\rightarrow$ select **Pages** from the left sidebar.
+3. Under **Build and deployment** $\rightarrow$ **Branch**, select `main` (or `master`) and click **Save**.
+4. GitHub will generate a live web link (e.g., `https://your-username.github.io/orbit-dynamics-simulator/`) where anyone can access and run the simulation directly online.
+
+---
+
+## 🎮 Controls & Keyboard Shortcuts
+
+| Action | Control / Shortcut |
 | :--- | :--- |
 | **Pan Camera** | Click + Drag anywhere on space |
-| **Zoom In / Out** | Mouse Scroll Wheel |
-| **Fast-Forward Speed** | `UP` Arrow Key / Slider |
-| **Slow Down Speed** | `DOWN` Arrow Key / Slider |
+| **Zoom In / Out** | Mouse Scroll Wheel / Touchpad Pinch |
+| **Fast-Forward Speed** | `UP` Arrow Key / Time Warp Slider |
+| **Slow Down Speed** | `DOWN` Arrow Key / Time Warp Slider |
 | **Pause / Play** | `SPACE` Key / Toggle Button |
 | **Recenter Camera** | Click "Recenter" Button |
 
