@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 2-Body Gravitational Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        space: {
+                            950: '#05070d',
+                            900: '#0b0f19',
+                            800: '#111827',
+                            700: '#1f293d',
+                            600: '#374151'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        input[type="range"] { accent-color: #6366f1; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(17, 24, 39, 0.5); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-space-950 text-gray-100 h-screen w-screen overflow-hidden flex flex-col relative select-none">
+
+    <!-- Canvas Simulation Area -->
+    <div id="canvasContainer" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing">
+        <canvas id="simCanvas" class="w-full h-full block"></canvas>
+    </div>
+
+    <!-- Top Toolbar Header -->
+    <header class="absolute top-4 left-4 right-4 z-20 pointer-events-none flex justify-between items-center">
+        <div class="pointer-events-auto flex items-center space-x-3 bg-space-900/80 backdrop-blur-md border border-space-700/60 p-2.5 px-4 rounded-2xl shadow-2xl">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-md shadow-indigo-500/30">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3" stroke-width="2"></circle>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-base font-bold bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent leading-tight">OrbitDynamics 2-Body</h1>
+                <p class="text-[11px] text-gray-400">Gravitational Simulator & Path Predictor</p>
+            </div>
+        </div>
+
+        <div class="pointer-events-auto flex items-center space-x-2 bg-space-900/80 backdrop-blur-md border border-space-700/60 p-2 rounded-2xl shadow-2xl">
+            <button id="btnPlay" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium text-xs transition flex items-center space-x-1.5 shadow-md shadow-indigo-600/20">
+                <svg id="playIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+                <span id="playText">Pause</span>
+            </button>
+            <button id="btnReset" class="px-3 py-1.5 bg-space-800 hover:bg-space-700 text-gray-200 rounded-xl font-medium text-xs transition border border-space-600/60">
+                Reset Orbit
+            </button>
+            <button id="btnCenterCam" title="Recenter Camera View" class="px-3 py-1.5 bg-space-800 hover:bg-space-700 text-gray-200 rounded-xl font-medium text-xs transition border border-space-600/60 flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12h3m14 0h3M12 2v3m0 14v3"/></svg>
+                <span>Recenter</span>
+            </button>
+            <button id="btnToggleSidebar" title="Toggle Controls" class="p-1.5 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition border border-space-600/60">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <button id="btnFullscreen" title="Toggle Fullscreen" class="p-1.5 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition border border-space-600/60">
+                <svg id="fsIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Floating Settings Sidebar -->
+    <aside id="sidebar" class="absolute top-20 right-4 z-20 w-80 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar bg-space-900/90 backdrop-blur-xl border border-space-700/70 p-4 rounded-2xl shadow-2xl space-y-4 transition-all duration-300 ease-in-out">
+        <div class="space-y-4">
+            <h2 class="text-xs font-semibold text-gray-300 tracking-wider uppercase border-b border-space-700/70 pb-2 flex items-center justify-between">
+                <span>Simulation Parameters</span>
+                <span class="text-[10px] text-indigo-400 font-normal">Fast Forward Enabled</span>
+            </h2>
+
+            <!-- Fast Forward Time Warp Slider -->
+            <div class="space-y-1.5 bg-indigo-950/30 p-2.5 rounded-xl border border-indigo-700/40">
+                <div class="flex justify-between text-xs">
+                    <span class="text-indigo-300 font-medium">Time Warp (Fast-Forward)</span>
+                    <span id="valTimeWarp" class="font-mono bg-space-950 px-2 py-0.5 rounded text-[11px] text-indigo-200">1.0x</span>
+                </div>
+                <input id="sliderTimeWarp" type="range" min="0.1" max="10.0" step="0.1" value="1.0" class="w-full h-1.5 bg-space-950 rounded-lg appearance-none cursor-pointer">
+                <p class="text-[10px] text-gray-400">Use UP/DOWN keys to speed up or slow down</p>
+            </div>
+
+            <!-- Mass 1 -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between text-xs">
+                    <span class="text-indigo-300 font-medium flex items-center">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block mr-1.5"></span>Body 1 Mass (M₁)
+                    </span>
+                    <span id="valMass1" class="font-mono bg-space-950 px-2 py-0.5 rounded text-[11px] text-indigo-200">100 × 10²⁴ kg</span>
+                </div>
+                <input id="sliderMass1" type="range" min="10" max="1000" value="100" class="w-full h-1.5 bg-space-950 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- Mass 2 -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between text-xs">
+                    <span class="text-pink-400 font-medium flex items-center">
+                        <span class="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block mr-1.5"></span>Body 2 Mass (M₂)
+                    </span>
+                    <span id="valMass2" class="font-mono bg-space-950 px-2 py-0.5 rounded text-[11px] text-pink-200">10 × 10²⁴ kg</span>
+                </div>
+                <input id="sliderMass2" type="range" min="1" max="500" value="10" class="w-full h-1.5 bg-space-950 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- Distance -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-300 font-medium">Initial Distance (r)</span>
+                    <span id="valDist" class="font-mono bg-space-950 px-2 py-0.5 rounded text-[11px] text-gray-200">250 px</span>
+                </div>
+                <input id="sliderDist" type="range" min="100" max="500" value="250" class="w-full h-1.5 bg-space-950 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- Speed Modifier -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-300 font-medium">Orbital Speed Multiplier</span>
+                    <span id="valVelFactor" class="font-mono bg-space-950 px-2 py-0.5 rounded text-[11px] text-gray-200">1.00x</span>
+                </div>
+                <input id="sliderVelFactor" type="range" min="0.1" max="2.0" step="0.05" value="1.0" class="w-full h-1.5 bg-space-950 rounded-lg appearance-none cursor-pointer">
+            </div>
+        </div>
+
+        <!-- Reference Frame Selection -->
+        <div class="space-y-2 pt-2 border-t border-space-700/70">
+            <h2 class="text-xs font-semibold text-gray-300 tracking-wider uppercase">Reference Frame</h2>
+            <div class="space-y-1.5">
+                <label class="flex items-center space-x-2.5 p-2 rounded-xl bg-space-950/60 border border-space-700/40 hover:bg-space-800/60 cursor-pointer transition">
+                    <input type="radio" name="refFrame" value="com" checked class="text-indigo-600 focus:ring-0">
+                    <div class="text-xs">
+                        <p class="font-medium text-gray-200">Center of Mass (Barycenter)</p>
+                    </div>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2 rounded-xl bg-space-950/60 border border-space-700/40 hover:bg-space-800/60 cursor-pointer transition">
+                    <input type="radio" name="refFrame" value="body1" class="text-indigo-600 focus:ring-0">
+                    <div class="text-xs">
+                        <p class="font-medium text-indigo-300">Body 1 (Stationary)</p>
+                    </div>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2 rounded-xl bg-space-950/60 border border-space-700/40 hover:bg-space-800/60 cursor-pointer transition">
+                    <input type="radio" name="refFrame" value="body2" class="text-indigo-600 focus:ring-0">
+                    <div class="text-xs">
+                        <p class="font-medium text-pink-300">Body 2 (Stationary)</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Overlays -->
+        <div class="space-y-2 pt-2 border-t border-space-700/70">
+            <h2 class="text-xs font-semibold text-gray-300 tracking-wider uppercase">Visual Overlays</h2>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <label class="flex items-center space-x-2 p-1.5 bg-space-950/40 rounded-lg border border-space-700/30 cursor-pointer">
+                    <input type="checkbox" id="chkPredicted" checked class="rounded text-indigo-600 focus:ring-0">
+                    <span class="text-gray-300">Predicted Path</span>
+                </label>
+                <label class="flex items-center space-x-2 p-1.5 bg-space-950/40 rounded-lg border border-space-700/30 cursor-pointer">
+                    <input type="checkbox" id="chkTrails" checked class="rounded text-indigo-600 focus:ring-0">
+                    <span class="text-gray-300">Past Trails</span>
+                </label>
+            </div>
+            <button id="btnClearTrails" class="w-full py-1 text-[11px] bg-space-800 hover:bg-space-700 text-gray-400 hover:text-gray-200 rounded-lg border border-space-700/50 transition">
+                Clear Trails
+            </button>
+        </div>
+    </aside>
+
+    <!-- Bottom Telemetry HUD -->
+    <div class="absolute bottom-4 left-4 z-10 bg-space-900/85 backdrop-blur-md border border-space-700/60 p-3 rounded-2xl shadow-2xl max-w-sm pointer-events-auto">
+        <div class="flex justify-between items-center mb-2 pb-1 border-b border-space-700/50">
+            <span id="currentFrameLabel" class="text-xs font-semibold text-indigo-400">Frame: Center of Mass</span>
+            <span id="simTime" class="font-mono text-[11px] text-gray-400">Time: 0.00s</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+            <div class="bg-space-950/70 p-2 rounded-xl border border-space-700/40">
+                <p class="text-[10px] text-gray-400">Separation (r)</p>
+                <p id="statDist" class="text-xs font-mono font-bold text-gray-100 mt-0.5">0.0 px</p>
+            </div>
+            <div class="bg-space-950/70 p-2 rounded-xl border border-space-700/40">
+                <p class="text-[10px] text-gray-400">Est. Period (T)</p>
+                <p id="statPeriod" class="text-xs font-mono font-bold text-amber-300 mt-0.5">0.0s</p>
+            </div>
+            <div class="bg-space-950/70 p-2 rounded-xl border border-space-700/40">
+                <p class="text-[10px] text-indigo-300">Speed 1</p>
+                <p id="statSpeed1" class="text-xs font-mono font-bold text-indigo-200 mt-0.5">0.0 px/s</p>
+            </div>
+            <div class="bg-space-950/70 p-2 rounded-xl border border-space-700/40">
+                <p class="text-[10px] text-pink-300">Speed 2</p>
+                <p id="statSpeed2" class="text-xs font-mono font-bold text-pink-200 mt-0.5">0.0 px/s</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Help -->
+    <div class="absolute bottom-4 right-4 z-10 bg-space-900/80 backdrop-blur border border-space-700/50 px-3 py-1.5 rounded-xl text-[11px] text-gray-400 pointer-events-none hidden md:flex items-center space-x-3">
+        <span><strong class="text-gray-200">Drag:</strong> Pan</span>
+        <span><strong class="text-gray-200">Wheel:</strong> Zoom</span>
+        <span id="zoomLevelDisplay" class="font-mono text-indigo-400">1.00x</span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvasContainer');
+
+        const sliderMass1 = document.getElementById('sliderMass1');
+        const sliderMass2 = document.getElementById('sliderMass2');
+        const sliderDist = document.getElementById('sliderDist');
+        const sliderVelFactor = document.getElementById('sliderVelFactor');
+        const sliderTimeWarp = document.getElementById('sliderTimeWarp');
+        
+        const valMass1 = document.getElementById('valMass1');
+        const valMass2 = document.getElementById('valMass2');
+        const valDist = document.getElementById('valDist');
+        const valVelFactor = document.getElementById('valVelFactor');
+        const valTimeWarp = document.getElementById('valTimeWarp');
+
+        const btnPlay = document.getElementById('btnPlay');
+        const playIcon = document.getElementById('playIcon');
+        const playText = document.getElementById('playText');
+        const btnReset = document.getElementById('btnReset');
+        const btnCenterCam = document.getElementById('btnCenterCam');
+        const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        const btnClearTrails = document.getElementById('btnClearTrails');
+        const sidebar = document.getElementById('sidebar');
+
+        const chkTrails = document.getElementById('chkTrails');
+        const chkPredicted = document.getElementById('chkPredicted');
+        const currentFrameLabel = document.getElementById('currentFrameLabel');
+        const simTime = document.getElementById('simTime');
+        const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
+
+        const statDist = document.getElementById('statDist');
+        const statPeriod = document.getElementById('statPeriod');
+        const statSpeed1 = document.getElementById('statSpeed1');
+        const statSpeed2 = document.getElementById('statSpeed2');
+
+        const G = 1500;
+        let isRunning = true;
+        let simT = 0;
+        let timeWarp = 1.0;
+
+        let camera = { x: 0, y: 0, zoom: 1.0, isDragging: false, startX: 0, startY: 0 };
+
+        let state = {
+            m1: 100, m2: 10, r: 250, velFactor: 1.0,
+            x1: 0, y1: 0, vx1: 0, vy1: 0,
+            x2: 0, y2: 0, vx2: 0, vy2: 0,
+            trail1: [], trail2: [],
+            refFrame: 'com'
+        };
+
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function resetCamera() {
+            camera.x = 0; camera.y = 0; camera.zoom = 1.0;
+            zoomLevelDisplay.innerText = `${camera.zoom.toFixed(2)}x`;
+        }
+
+        function resetSimulation() {
+            state.m1 = parseFloat(sliderMass1.value);
+            state.m2 = parseFloat(sliderMass2.value);
+            state.r = parseFloat(sliderDist.value);
+            state.velFactor = parseFloat(sliderVelFactor.value);
+
+            valMass1.innerText = `${state.m1} × 10²⁴ kg`;
+            valMass2.innerText = `${state.m2} × 10²⁴ kg`;
+            valDist.innerText = `${state.r} px`;
+            valVelFactor.innerText = `${state.velFactor.toFixed(2)}x`;
+
+            const m1 = state.m1, m2 = state.m2, d = state.r, M = m1 + m2;
+            state.x1 = -d * (m2 / M); state.y1 = 0;
+            state.x2 = d * (m1 / M); state.y2 = 0;
+
+            const vRel = Math.sqrt((G * M) / d) * state.velFactor;
+            state.vx1 = 0; state.vy1 = -vRel * (m2 / M);
+            state.vx2 = 0; state.vy2 = vRel * (m1 / M);
+
+            state.trail1 = []; state.trail2 = []; simT = 0;
+        }
+
+        sliderTimeWarp.addEventListener('input', (e) => {
+            timeWarp = parseFloat(e.target.value);
+            valTimeWarp.innerText = `${timeWarp.toFixed(1)}x`;
+        });
+
+        [sliderMass1, sliderMass2, sliderDist, sliderVelFactor].forEach(slider => {
+            slider.addEventListener('input', resetSimulation);
+        });
+
+        document.querySelectorAll('input[name="refFrame"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                state.refFrame = e.target.value;
+                state.trail1 = []; state.trail2 = [];
+            });
+        });
+
+        btnClearTrails.addEventListener('click', () => {
+            state.trail1 = []; state.trail2 = [];
+        });
+
+        btnPlay.addEventListener('click', () => {
+            isRunning = !isRunning;
+            playText.innerText = isRunning ? 'Pause' : 'Play';
+        });
+
+        btnReset.addEventListener('click', resetSimulation);
+        btnCenterCam.addEventListener('click', resetCamera);
+        btnToggleSidebar.addEventListener('click', () => sidebar.classList.toggle('hidden'));
+
+        // Mouse Pan & Zoom Controls
+        container.addEventListener('mousedown', (e) => {
+            camera.isDragging = true;
+            camera.startX = e.clientX - camera.x;
+            camera.startY = e.clientY - camera.y;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!camera.isDragging) return;
+            camera.x = e.clientX - camera.startX;
+            camera.y = e.clientY - camera.startY;
+        });
+
+        window.addEventListener('mouseup', () => { camera.isDragging = false; });
+
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+            camera.zoom = Math.max(0.15, Math.min(5.0, camera.zoom * zoomFactor));
+            zoomLevelDisplay.innerText = `${camera.zoom.toFixed(2)}x`;
+        }, { passive: false });
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') {
+                timeWarp = Math.min(10.0, timeWarp + 0.5);
+                sliderTimeWarp.value = timeWarp;
+                valTimeWarp.innerText = `${timeWarp.toFixed(1)}x`;
+            } else if (e.key === 'ArrowDown') {
+                timeWarp = Math.max(0.1, timeWarp - 0.5);
+                sliderTimeWarp.value = timeWarp;
+                valTimeWarp.innerText = `${timeWarp.toFixed(1)}x`;
+            } else if (e.key === ' ') {
+                isRunning = !isRunning;
+                playText.innerText = isRunning ? 'Pause' : 'Play';
+            }
+        });
+
+        function updatePhysics(dt) {
+            const effectiveDt = dt * timeWarp;
+            const subSteps = 12;
+            const subDt = effectiveDt / subSteps;
+
+            for (let step = 0; step < subSteps; step++) {
+                const dx = state.x2 - state.x1;
+                const dy = state.y2 - state.y1;
+                const distSq = dx * dx + dy * dy + 1e-4;
+                const dist = Math.sqrt(distSq);
+
+                const fMag = (G * state.m1 * state.m2) / distSq;
+                const ax1 = (fMag * (dx / dist)) / state.m1;
+                const ay1 = (fMag * (dy / dist)) / state.m1;
+                const ax2 = (-fMag * (dx / dist)) / state.m2;
+                const ay2 = (-fMag * (dy / dist)) / state.m2;
+
+                state.vx1 += ax1 * subDt; state.vy1 += ay1 * subDt;
+                state.vx2 += ax2 * subDt; state.vy2 += ay2 * subDt;
+
+                state.x1 += state.vx1 * subDt; state.y1 += state.vy1 * subDt;
+                state.x2 += state.vx2 * subDt; state.y2 += state.vy2 * subDt;
+            }
+            simT += effectiveDt;
+        }
+
+        // Full Orbit Prediction Engine
+        function computePredictedPaths() {
+            let px1 = state.x1, py1 = state.y1, pvx1 = state.vx1, pvy1 = state.vy1;
+            let px2 = state.x2, py2 = state.y2, pvx2 = state.vx2, pvy2 = state.vy2;
+
+            const path1 = [], path2 = [];
+            const dtPred = 0.04;
+            const maxSteps = 2500;
+
+            const initialDx = px2 - px1;
+            const initialDy = py2 - py1;
+            const initialDist = Math.hypot(initialDx, initialDy);
+
+            for (let i = 0; i < maxSteps; i++) {
+                const dx = px2 - px1;
+                const dy = py2 - py1;
+                const distSq = dx * dx + dy * dy + 1e-4;
+                const dist = Math.sqrt(distSq);
+
+                const fMag = (G * state.m1 * state.m2) / distSq;
+                const ax1 = (fMag * (dx / dist)) / state.m1;
+                const ay1 = (fMag * (dy / dist)) / state.m1;
+                const ax2 = (-fMag * (dx / dist)) / state.m2;
+                const ay2 = (-fMag * (dy / dist)) / state.m2;
+
+                pvx1 += ax1 * dtPred; pvy1 += ay1 * dtPred;
+                pvx2 += ax2 * dtPred; pvy2 += ay2 * dtPred;
+
+                px1 += pvx1 * dtPred; py1 += pvy1 * dtPred;
+                px2 += pvx2 * dtPred; py2 += pvy2 * dtPred;
+
+                let rx1 = px1, ry1 = py1, rx2 = px2, ry2 = py2;
+
+                if (state.refFrame === 'body1') {
+                    rx1 = 0; ry1 = 0; rx2 = px2 - px1; ry2 = py2 - py1;
+                } else if (state.refFrame === 'body2') {
+                    rx1 = px1 - px2; ry1 = py1 - py2; rx2 = 0; ry2 = 0;
+                } else {
+                    const comX = (state.m1 * px1 + state.m2 * px2) / (state.m1 + state.m2);
+                    const comY = (state.m1 * py1 + state.m2 * py2) / (state.m1 + state.m2);
+                    rx1 -= comX; ry1 -= comY; rx2 -= comX; ry2 -= comY;
+                }
+
+                path1.push({x: rx1, y: ry1});
+                path2.push({x: rx2, y: ry2});
+
+                // Detect orbit period closure
+                if (i > 30) {
+                    const currentDx = px2 - px1;
+                    const currentDy = py2 - py1;
+                    const relDist = Math.hypot(currentDx - initialDx, currentDy - initialDy);
+                    if (relDist < initialDist * 0.05) {
+                        path1.push(path1[0]);
+                        path2.push(path2[0]);
+                        break;
+                    }
+                }
+            }
+
+            return { path1, path2 };
+        }
+
+        let lastTime = performance.now();
+        function loop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+
+            if (isRunning) updatePhysics(dt);
+
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        function draw() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            ctx.clearRect(0, 0, width, height);
+
+            const centerX = width / 2 + camera.x;
+            const centerY = height / 2 + camera.y;
+
+            let rx1 = state.x1, ry1 = state.y1, rx2 = state.x2, ry2 = state.y2;
+
+            if (state.refFrame === 'body1') {
+                rx1 = 0; ry1 = 0; rx2 = state.x2 - state.x1; ry2 = state.y2 - state.y1;
+            } else if (state.refFrame === 'body2') {
+                rx1 = state.x1 - state.x2; ry1 = state.y1 - state.y2; rx2 = 0; ry2 = 0;
+            } else {
+                const comX = (state.m1 * state.x1 + state.m2 * state.x2) / (state.m1 + state.m2);
+                const comY = (state.m1 * state.y1 + state.m2 * state.y2) / (state.m1 + state.m2);
+                rx1 -= comX; ry1 -= comY; rx2 -= comX; ry2 -= comY;
+            }
+
+            const p1X = centerX + rx1 * camera.zoom;
+            const p1Y = centerY + ry1 * camera.zoom;
+            const p2X = centerX + rx2 * camera.zoom;
+            const p2Y = centerY + ry2 * camera.zoom;
+
+            if (isRunning) {
+                state.trail1.push({x: p1X, y: p1Y});
+                state.trail2.push({x: p2X, y: p2Y});
+                if (state.trail1.length > 250) state.trail1.shift();
+                if (state.trail2.length > 250) state.trail2.shift();
+            }
+
+            drawGrid(centerX, centerY, camera.zoom, width, height);
+
+            // Draw Full Orbit Trajectory Paths
+            if (chkPredicted.checked) {
+                const { path1, path2 } = computePredictedPaths();
+                drawPredictedPath(path1, centerX, centerY, camera.zoom, 'rgba(99, 102, 241, 0.6)');
+                drawPredictedPath(path2, centerX, centerY, camera.zoom, 'rgba(236, 72, 153, 0.6)');
+            }
+
+            if (chkTrails.checked) {
+                drawTrail(state.trail1, '#6366f1');
+                drawTrail(state.trail2, '#ec4899');
+            }
+
+            const r1Radius = Math.max(8, Math.min(36, Math.cbrt(state.m1) * 2.5 * camera.zoom));
+            const r2Radius = Math.max(6, Math.min(30, Math.cbrt(state.m2) * 2.5 * camera.zoom));
+
+            drawCelestialBody(p1X, p1Y, r1Radius, '#6366f1', '#818cf8', 'Body 1');
+            drawCelestialBody(p2X, p2Y, r2Radius, '#ec4899', '#f472b6', 'Body 2');
+
+            // Telemetry updates
+            const currentDist = Math.hypot(state.x2 - state.x1, state.y2 - state.y1);
+            const periodEst = 2 * Math.PI * Math.sqrt(Math.pow(currentDist, 3) / (G * (state.m1 + state.m2)));
+
+            statDist.innerText = `${currentDist.toFixed(1)} px`;
+            statPeriod.innerText = `${periodEst.toFixed(1)}s`;
+            statSpeed1.innerText = `${Math.hypot(state.vx1, state.vy1).toFixed(1)} px/s`;
+            statSpeed2.innerText = `${Math.hypot(state.vx2, state.vy2).toFixed(1)} px/s`;
+            simTime.innerText = `Time: ${simT.toFixed(2)}s`;
+        }
+
+        function drawGrid(cx, cy, zoom, w, h) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+            ctx.lineWidth = 1;
+            const step = 50 * zoom;
+            if (step < 10) return;
+            ctx.beginPath();
+            for (let x = cx % step; x < w; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+            for (let y = cy % step; y < h; y += step) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+            ctx.stroke();
+        }
+
+        function drawPredictedPath(path, cx, cy, zoom, color) {
+            if (path.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(cx + path[0].x * zoom, cy + path[0].y * zoom);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(cx + path[i].x * zoom, cy + path[i].y * zoom);
+            }
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawTrail(trail, color) {
+            if (trail.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(trail[0].x, trail[0].y);
+            for (let i = 1; i < trail.length; i++) { ctx.lineTo(trail[i].x, trail[i].y); }
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.45;
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        function drawCelestialBody(x, y, radius, baseColor, glowColor, label) {
+            const gradient = ctx.createRadialGradient(x, y, radius * 0.2, x, y, radius * 2.2);
+            gradient.addColorStop(0, glowColor);
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, radius * 2.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            const bodyGrad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
+            bodyGrad.addColorStop(0, glowColor);
+            bodyGrad.addColorStop(1, baseColor);
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '11px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, y + radius + 15);
+        }
+
+        window.onload = () => {
+            resizeCanvas();
+            resetSimulation();
+            requestAnimationFrame(loop);
+        };
+    </script>
+</body>
+</html>
