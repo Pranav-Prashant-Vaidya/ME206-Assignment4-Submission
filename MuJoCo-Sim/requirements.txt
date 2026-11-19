@@ -1,0 +1,6 @@
+mujoco>=3.2
+numpy
+pillow
+# optional: MP4 export in render_video.py
+imageio
+imageio-ffmpeg
